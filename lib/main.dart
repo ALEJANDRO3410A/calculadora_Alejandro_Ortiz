@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; 
 
 void main() => runApp(const MyApp());
 
@@ -9,7 +10,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        backgroundColor: Colors.lightBlue[50], 
+        backgroundColor: Colors.lightBlue[50],
         body: const Calculator(),
       ),
     );
@@ -27,45 +28,61 @@ class _CalculatorState extends State<Calculator> {
   String _displayText = '0';
   double? _firstNumber;
   String? _operation;
+  bool _isError = false;
+
+  final NumberFormat _numberFormat = NumberFormat('#,##0.###'); 
 
   void _onButtonPressed(String value) {
     setState(() {
+      if (_isError && value != 'C') {
+        return; 
+      }
+
       if (value == 'C') {
         _displayText = '0';
         _firstNumber = null;
         _operation = null;
+        _isError = false;
       } else if (value == '=') {
         if (_firstNumber != null && _operation != null) {
-          double secondNumber = double.tryParse(_displayText) ?? 0;
-          switch (_operation) {
-            case '+':
-              _displayText = (_firstNumber! + secondNumber).toString();
-              break;
-            case '-':
-              _displayText = (_firstNumber! - secondNumber).toString();
-              break;
-            case 'x':
-              _displayText = (_firstNumber! * secondNumber).toString();
-              break;
-            case '/':
-              _displayText = secondNumber != 0
-                  ? (_firstNumber! / secondNumber).toString()
-                  : 'Error';
-              break;
+          double secondNumber = double.tryParse(_displayText.replaceAll(',', '')) ?? 0;
+          if (_operation == '/' && secondNumber == 0) {
+            _displayText = 'No se puede dividir entre cero';
+            _isError = true;
+          } else {
+            double result;
+            switch (_operation) {
+              case '+':
+                result = _firstNumber! + secondNumber;
+                break;
+              case '-':
+                result = _firstNumber! - secondNumber;
+                break;
+              case 'x':
+                result = _firstNumber! * secondNumber;
+                break;
+              case '/':
+                result = _firstNumber! / secondNumber;
+                break;
+              default:
+                result = 0;
+            }
+            _displayText = _numberFormat.format(result); 
           }
           _firstNumber = null;
           _operation = null;
         }
       } else if (value == '+' || value == '-' || value == 'x' || value == '/') {
-        _firstNumber = double.tryParse(_displayText);
+        _firstNumber = double.tryParse(_displayText.replaceAll(',', ''));
         _operation = value;
-        _displayText = '$_firstNumber $value';
+        _displayText = '${_numberFormat.format(_firstNumber)} $value';
       } else {
-        if (_displayText == '0' || (_operation != null && _displayText == '$_firstNumber $_operation')) {
+        if (_displayText == '0' || (_operation != null && _displayText == '${_numberFormat.format(_firstNumber)} $_operation')) {
           _displayText = value;
         } else {
           _displayText += value;
         }
+        _displayText = _numberFormat.format(double.tryParse(_displayText.replaceAll(',', '')) ?? 0);
       }
     });
   }
@@ -101,7 +118,7 @@ class _CalculatorState extends State<Calculator> {
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(vertical: 20),
           child: const Text(
-            "Alejandro Ortiz",
+            "Calculadora de Alejandro Ortiz",
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -116,7 +133,7 @@ class _CalculatorState extends State<Calculator> {
             _displayText,
             style: const TextStyle(
               fontSize: 36,
-              color: Colors.black87, 
+              color: Colors.black87,
             ),
           ),
         ),
